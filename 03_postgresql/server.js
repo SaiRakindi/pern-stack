@@ -1,5 +1,8 @@
 import express from "express";
 
+import { db } from "./db.js";
+import { cars } from "./schema.js";
+
 const app = express();
 
 const port = 3000;
@@ -16,17 +19,11 @@ app.use((req, res, next) => {
   next();
 });
 
-let cars = [
-  { id: 1, make: "Toyota", model: "Corolla", year: 2020, price: 28000 },
-  { id: 2, make: "Tesla", model: "Model S", year: 2023, price: 25000 },
-  { id: 3, make: "Ford", model: "F-150", year: 2021, price: 35000 },
-];
-
 router.get("/", (req, res) => {
   res.send("Hello from the Cars API");
 });
 
-router.get("/:id", (req, res) => {
+router.get("/cars/:id", (req, res) => {
   const id = Number(req.params.id);
   const car = cars.find((car) => car.id === id);
 
@@ -35,26 +32,29 @@ router.get("/:id", (req, res) => {
   res.json(car);
 });
 
-router.get("/cars", (req, res) => {
-  res.json(cars);
+router.get("/cars", async (req, res) => {
+  const allCars = await db.select().from(cars);
+
+  res.json(allCars);
 });
 
-router.post("/cars", (req, res) => {
+router.post("/cars", async (req, res) => {
   const { make, model, year, price } = req.body;
 
   if (!make || !model || !year || !price) {
-    return res.status(400).send("All fields are required");
+    return res.status(400).json({ error: "All fields are required" });
   }
 
-  const newCar = {
-    id: cars.length + 1,
-    make,
-    model,
-    year: Number(year),
-    price: Number(year),
-  };
+  const [newCar] = await db
+    .insert(cars)
+    .values({
+      make,
+      model,
+      year,
+      price,
+    })
+    .returning();
 
-  cars.push(newCar);
   res.status(201).json(newCar);
 });
 

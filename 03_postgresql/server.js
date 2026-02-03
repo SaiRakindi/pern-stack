@@ -45,13 +45,15 @@ router.post("/cars", async (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+  console.log("req.body", req.body);
+
   const [newCar] = await db
     .insert(cars)
     .values({
       make,
       model,
-      year,
-      price,
+      year: Number(year),
+      price: Number(price),
     })
     .returning();
 
